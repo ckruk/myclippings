@@ -1,0 +1,143 @@
+
+myclippings 1.0, Copyright (C) Cezary M. Kruk 2012 <c.kruk at bigfoot.com>
+parse_kindle_clippings, Copyright (C) Mark Rajcok 2011 <mrajcok at gmail.com>
+
+The myclippings script is based on parse_kindle_clippings script and parses
+Kindle's "My Clippings.txt" file for highlights, notes, and bookmarks,
+groups them by book/title, and stores them in the separate files or in a
+single file.
+
+Kindle's "My Clippings.txt" file is a mess.  The myclippings script helps to
+sort clippings in order to process them in the editor or to store sorted and
+edited clippings back in "My Clippings.txt" file.
+
+Highlights start with "-", notes start with "*", and bookmarks start with
+"!" -- all preceded by the locations numbers.
+
+A UTF-8 encoded file is created.
+
+Configuration:
+
+   $kindle    -- "4" for Kindle 4; "3" for Kindle 3
+   $system    -- "Linux" or "Windows"
+   $combine   -- "off" for separate files; "on" for combined file
+   $titles    -- "off" for skipping titles; "on" for storing titles
+   $bookmarks -- "on" for storing bookmarks; "off" for skipping bookmarks
+   $locations -- "on" for storing locations; "off" for skipping locations
+
+The $kindle variable determines the Kindle version -- 4 or 3.
+
+The $system variable changes the path where the script seeks for "My
+Clippings.txt" file (the current directory for Linux or "My Documents"
+directory for Windows) as well as it changes the line breaks type used in
+the generated files (LF for Linux or CR-LF for Windows).
+
+The $combine variable causes storing the data in the separate files -- one
+file per book/title -- when it is set to "off" or combining them into the
+single file named "myclippings.txt" when it is set to "on".  When $combine
+variable is set to "on" the best idea is to set the $titles variable to "on"
+too.  In the other case it will be impossible to determine the titles on the
+basis of "myclippings.txt" file.
+
+The $titles variable allows to generate the files including just the
+clippings when it is set to "off" or to generate the files starting with the
+underlined book titles when it is set to "on".
+
+The $bookmarks variable causes storing of the bookmarks when it is set to
+"on" or skipping them when it is set to "off".
+
+The $locations variable causes storing the locations when it is set to "on"
+or skipping them when it is set to "off".
+
+When $kindle variable is set to "3", $system variable is set to "Windows",
+$combine variable is set to "on", $titles variable is set to "on",
+$bookmarks variable is set to "off", and $locations variable is set to "off"
+the myclippings script works in a way similar to the parse_kindle_clippings
+script.  In fact these settings are the complement of the default set of
+settings of the myclippings script.  The same result gives the following
+command:
+
+   myclippings -k 3 -s Windows -c on -t on -b off -l off
+
+It is possible to pass the options to the script using the command line:
+
+Format:
+
+   myclippings [options]
+
+Options:
+
+   -k [4 | 3]           - Kindle version
+   -s [Linux | Windows] - system type
+   -c [off | on]        - combine books/titles into one file
+   -t [off | on]        - store titles
+   -b [on  | off]       - store bookmarks
+   -l [on  | off]       - store locations
+   -i                   - integrate "myclippings.txt"
+   -d                   - disintegrate "myclippings.txt"
+   -r                   - restore "My Clippings.txt"
+   -h                   - help
+
+The script used with -i option integrates "myclippings.txt" file on the
+basis of "*.txt" files from the current directory.
+
+The script used with -d option disintegrates "myclippings.txt" file into
+"*.txt" files using book/title file names.  If there are no titles in
+"myclippings.txt" file the script uses the names such as: "BOOK NO. 1.txt",
+"BOOK NO. 2.txt", etc.
+
+The script used with -r option restores "My Clippings.txt" file on the basis
+of "myclippings.txt" file.  If there is no "myclippings.txt" file the script
+restores it first on the basis of "*.txt" files from the current directory. 
+If "myclippings.txt" file does not contain the titles of the books and the
+location entries the resulting "My Clippings.txt" file is the following:
+
+﻿BOOK NO. 1
+- Your Highlight Location 0
+
+Why can a baby not understand this discussion? He does not have the necessary stored knowledge. 
+==========
+BOOK NO. 1
+- Your Note Location 0
+
+writer: from abstraction to concretes; reader: from concretes to abstraction
+==========
+BOOK NO. 1
+- Your Bookmark Location 0
+
+
+==========
+
+The script requires "My Clippings.txt" file using the strict Kindle format. 
+So it is not a good idea to edit that file manually.  One can use
+myclippings script instead to generate text files or file, then edit that
+file to remove double entries, proofread the text etc., and finally restore
+"My Clippings.txt" file using the script with -r option.
+
+See "Kindle 4" and "Kindle 3" directories for sample "My Clippings.txt"
+files.
+
+Sample input -- "My Clippings.txt" in Kindle 4 format:
+
+﻿The art of fiction: a guide for writers and readers (Ayn Rand; Tore Boeckmann)
+- Your Highlight Location 156-156 | Added on Saturday, October 01, 2011, 09:51 AM
+
+Why can a baby not understand this discussion? He does not have the necessary stored knowledge. 
+==========
+The art of fiction: a guide for writers and readers (Ayn Rand; Tore Boeckmann)
+- Your Note Location 333 | Added on Saturday, October 01, 2011, 10:03 AM
+
+writer: from abstraction to concretes; reader: from concretes to abstraction
+==========
+The art of fiction: a guide for writers and readers (Ayn Rand; Tore Boeckmann)
+- Your Bookmark Location 386 | Added on Saturday, October 01, 2011, 10:19 AM
+
+
+==========
+
+Sample output -- "The art of fiction: a guide for writers and readers (Ayn
+Rand; Tore Boeckmann).txt":
+
+156-156	- Why can a baby not understand this discussion? He does not have the necessary stored knowledge. 
+333	* writer: from abstraction to concretes; reader: from concretes to abstraction
+386	! 
