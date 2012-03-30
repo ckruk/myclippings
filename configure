@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# configure prepares Makefile for myclippings 1.0
+# Copyright (C) 2011-2012 Cezary M. Kruk <c.kruk@bigfoot.com>
+
+version=1.0
+
+if [ "$1" == "-h" -o "$1" == "--help" ]
+then
+cat << EOF
+\`configure' configures myclippings $version.
+
+Usage: ./configure [OPTION]
+
+Configuration:
+  -h, --help              displays this help and exits
+
+Installation directory:
+  --prefix=PREFIX         installs architecture-independent files in PREFIX
+                          default is: /usr/local
+                          allowed is: /usr
+EOF
+exit
+else
+if [ "`echo $1 | grep '\-\-prefix='`" != "" ]
+then
+    PREFIX=`echo $1 | sed 's/--prefix=//'`
+fi
+if [ "$PREFIX" == "" ]
+then
+    PREFIX=/usr/local
+fi
+
+FILE=Makefile
+
+> $FILE
+echo PREFIX=$PREFIX >> $FILE
+echo PACKAGE=myclippings-$version >> $FILE
+echo  >> $FILE
+echo BINDIR=\$\(PREFIX\)/bin >> $FILE
+echo DOCDIR=\$\(PREFIX\)/doc/\$\(PACKAGE\) >> $FILE
+echo >> $FILE
+cat >> $FILE <<EOF
+install:
+	if [ ! -d \$(BINDIR) ]; then install -d \$(BINDIR); fi
+	cp -p myclippings \$(BINDIR)
+	if [ ! -d \$(DOCDIR) ]; then install -d \$(DOCDIR); fi
+	cp -p COPYING ChangeLog INSTALL README README.Windows.txt THANKS \$(DOCDIR)
+	if [ ! -d \$(DOCDIR)/Kindle\ 3 ]; then install -d \$(DOCDIR)/Kindle\ 3; fi
+	if [ ! -d \$(DOCDIR)/Kindle\ 4 ]; then install -d \$(DOCDIR)/Kindle\ 4; fi
+	cp -p Kindle\ 3/My\ Clippings.txt \$(DOCDIR)/Kindle\ 3
+	cp -p Kindle\ 4/My\ Clippings.txt \$(DOCDIR)/Kindle\ 4
+
+uninstall:
+	rm -f \$(BINDIR)/myclippings
+	rm -f \$(DOCDIR)/Kindle\ 3/My\ Clippings.txt \$(DOCDIR)/Kindle\ 4/My\ Clippings.txt
+	rm -f \$(DOCDIR)/COPYING \$(DOCDIR)/ChangeLog \$(DOCDIR)/INSTALL \$(DOCDIR)/README \$(DOCDIR)/README.Windows.txt \$(DOCDIR)/THANKS
+	rmdir \$(DOCDIR)/Kindle\ 3 \$(DOCDIR)/Kindle\ 4
+	if [ -d \$(DOCDIR) ]; then rmdir \$(DOCDIR); fi
+EOF
+fi
+

@@ -1,0 +1,13 @@
+
+To install myclippings in Linux run:
+
+   ./configure
+   make install
+
+To uninstall myclippings from Linux run:
+
+   make uninstall
+
+Windows users should follow the procedures that are described in
+README.Windows.txt file.
+

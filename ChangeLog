@@ -1,0 +1,43 @@
+2012-02-10 -- version 1.0
+* myclippings by Cezary M. Kruk is based on parse_kindle_clippings by Mark
+  Rajcok -- it reads Kindle's 4 or 3 "My Clippings.txt" file and stores
+  clippings sorted by book/title in the separate files -- one file per a
+  book/title -- or in a common file named "myclippings.txt".  The highlights,
+  the notes, and the bookmarks entries stored in the generated files or file
+  are preceded by the locations numbers.  The script output is highly
+  customizable.
+* it can read "My Clippings.txt" file using Kindle 4 or Kindle 3 format
+  (see: the $kindle variable from the configuration section).
+* it allows to generate the files using LF or CR-LF line breaks (see: the
+  $system variable from the configuration section).
+* it stores data in separate files for each book/title or in a common file
+  (see: the $combine variable from the configuration section).
+* it allows to skip the titles or to store them in the generated files or
+  file (see: the $titles variable from the configuration section).
+* it allows to store bookmarks or to skip them (see: the $bookmarks variable
+  from the configuration section).
+* it allows to store locations or to skip them (see: the $locations variable
+  from the configuration section).
+* it allows to integrate "myclippings.txt" file on the basis of "*.txt"
+  files from the current directory (see: -i option).
+* it allows to disintegrate "myclippings.txt" file into "*.txt" files (see:
+  -d option).
+* it allows to restore "My Clippings.txt" file on the basis of
+  "myclippings.txt" file -- if it is necessary it restores "myclippings.txt"
+  file on the basis of "*.txt" files from the current directory (see: -r
+  option).
+* the Linux version reads "My Clippings.txt" file from the current
+  directory; the Windows version reads "My Clippings.txt" file from "My
+  Documents" directory (see: the $system variable from the configuration
+  section).
+* the script can read the settings for the mentioned variables using the
+  command line options and arguments.
+* the script was tested in Slackware Linux 13.37 with Perl 5.12.3 as well as
+  in Windows XP with ActivePerl 5.14.2 Build 1402 for MSWin32-x86 (see:
+  http://www.perl.org/get.html)
+
+2011-01-23 -- initial version
+* parse_kindle_clippings by Mark Rajcok reads Kindle's 3 "My Clippings.txt"
+  file and stores highlights and notes (but no bookmarks) sorted by
+  book/title in ordered_clippings.txt file.
+

@@ -1,0 +1,618 @@
+#!/usr/bin/perl -w
+# 
+# myclippings 1.0, Copyright (C) Cezary M. Kruk 2012 <c.kruk at bigfoot.com>
+# parse_kindle_clippings, Copyright (C) Mark Rajcok 2011 <mrajcok at gmail.com>
+# 
+# The myclippings script is based on parse_kindle_clippings script and parses
+# Kindle's "My Clippings.txt" file for highlights, notes, and bookmarks,
+# groups them by book/title, and stores them in the separate files or in a
+# single file.
+# 
+# Kindle's "My Clippings.txt" file is a mess.  The myclippings script helps to
+# sort clippings in order to process them in the editor or to store sorted and
+# edited clippings back in "My Clippings.txt" file.
+# 
+# Highlights start with "-", notes start with "*", and bookmarks start with
+# "!" -- all preceded by the locations numbers.
+# 
+# A UTF-8 encoded file is created.
+# 
+# Configuration:
+# 
+#    $kindle    -- "4" for Kindle 4; "3" for Kindle 3
+#    $system    -- "Linux" or "Windows"
+#    $combine   -- "off" for separate files; "on" for combined file
+#    $titles    -- "off" for skipping titles; "on" for storing titles
+#    $bookmarks -- "on" for storing bookmarks; "off" for skipping bookmarks
+#    $locations -- "on" for storing locations; "off" for skipping locations
+# 
+# The $kindle variable determines the Kindle version -- 4 or 3.
+# 
+# The $system variable changes the path where the script seeks for "My
+# Clippings.txt" file (the current directory for Linux or "My Documents"
+# directory for Windows) as well as it changes the line breaks type used in
+# the generated files (LF for Linux or CR-LF for Windows).
+# 
+# The $combine variable causes storing the data in the separate files -- one
+# file per book/title -- when it is set to "off" or combining them into the
+# single file named "myclippings.txt" when it is set to "on".  When $combine
+# variable is set to "on" the best idea is to set the $titles variable to "on"
+# too.  In the other case it will be impossible to determine the titles on the
+# basis of "myclippings.txt" file.
+# 
+# The $titles variable allows to generate the files including just the
+# clippings when it is set to "off" or to generate the files starting with the
+# underlined book titles when it is set to "on".
+# 
+# The $bookmarks variable causes storing of the bookmarks when it is set to
+# "on" or skipping them when it is set to "off".
+# 
+# The $locations variable causes storing the locations when it is set to "on"
+# or skipping them when it is set to "off".
+# 
+# When $kindle variable is set to "3", $system variable is set to "Windows",
+# $combine variable is set to "on", $titles variable is set to "on",
+# $bookmarks variable is set to "off", and $locations variable is set to "off"
+# the myclippings script works in a way similar to the parse_kindle_clippings
+# script.  In fact these settings are the complement of the default set of
+# settings of the myclippings script.  The same result gives the following
+# command:
+# 
+#    myclippings -k 3 -s Windows -c on -t on -b off -l off
+# 
+# It is possible to pass the options to the script using the command line:
+# 
+# Format:
+# 
+#    myclippings [options]
+# 
+# Options:
+# 
+#    -k [4 | 3]           - Kindle version
+#    -s [Linux | Windows] - system type
+#    -c [off | on]        - combine books/titles into one file
+#    -t [off | on]        - store titles
+#    -b [on  | off]       - store bookmarks
+#    -l [on  | off]       - store locations
+#    -i                   - integrate "myclippings.txt"
+#    -d                   - disintegrate "myclippings.txt"
+#    -r                   - restore "My Clippings.txt"
+#    -h                   - help
+# 
+# The script used with -i option integrates "myclippings.txt" file on the
+# basis of "*.txt" files from the current directory.
+# 
+# The script used with -d option disintegrates "myclippings.txt" file into
+# "*.txt" files using book/title file names.  If there are no titles in
+# "myclippings.txt" file the script uses the names such as: "BOOK NO. 1.txt",
+# "BOOK NO. 2.txt", etc.
+# 
+# The script used with -r option restores "My Clippings.txt" file on the basis
+# of "myclippings.txt" file.  If there is no "myclippings.txt" file the script
+# restores it first on the basis of "*.txt" files from the current directory. 
+# If "myclippings.txt" file does not contain the titles of the books and the
+# location entries the resulting "My Clippings.txt" file is the following:
+# 
+# ﻿BOOK NO. 1
+# - Your Highlight Location 0
+# 
+# Why can a baby not understand this discussion? He does not have the necessary stored knowledge. 
+# ==========
+# BOOK NO. 1
+# - Your Note Location 0
+# 
+# writer: from abstraction to concretes; reader: from concretes to abstraction
+# ==========
+# BOOK NO. 1
+# - Your Bookmark Location 0
+# 
+# 
+# ==========
+# 
+# The script requires "My Clippings.txt" file using the strict Kindle format. 
+# So it is not a good idea to edit that file manually.  One can use
+# myclippings script instead to generate text files or file, then edit that
+# file to remove double entries, proofread the text etc., and finally restore
+# "My Clippings.txt" file using the script with -r option.
+# 
+# See "Kindle 4" and "Kindle 3" directories for sample "My Clippings.txt"
+# files.
+# 
+# Sample input -- "My Clippings.txt" in Kindle 4 format:
+# 
+# ﻿The art of fiction: a guide for writers and readers (Ayn Rand; Tore Boeckmann)
+# - Your Highlight Location 156-156 | Added on Saturday, October 01, 2011, 09:51 AM
+# 
+# Why can a baby not understand this discussion? He does not have the necessary stored knowledge. 
+# ==========
+# The art of fiction: a guide for writers and readers (Ayn Rand; Tore Boeckmann)
+# - Your Note Location 333 | Added on Saturday, October 01, 2011, 10:03 AM
+# 
+# writer: from abstraction to concretes; reader: from concretes to abstraction
+# ==========
+# The art of fiction: a guide for writers and readers (Ayn Rand; Tore Boeckmann)
+# - Your Bookmark Location 386 | Added on Saturday, October 01, 2011, 10:19 AM
+# 
+# 
+# ==========
+# 
+# Sample output -- "The art of fiction: a guide for writers and readers (Ayn
+# Rand; Tore Boeckmann).txt":
+# 
+# 156-156	- Why can a baby not understand this discussion? He does not have the necessary stored knowledge. 
+# 333	* writer: from abstraction to concretes; reader: from concretes to abstraction
+# 386	! 
+
+use warnings;
+use strict;
+use Encode;
+# use diagnostics;
+
+# CONFIGURATION SECTION BEGINS HERE
+
+my $kindle =    "4";       # "4" for Kindle 4; "3" for Kindle 3
+my $system =    "Linux";   # "Linux" or "Windows"
+my $combine =   "off";     # "off" for multiple files; "on" for single file
+my $titles =    "off";     # "off" for clippings alone; "on" for titles and clippings
+my $bookmarks = "on";      # "on" for keeping bookmarks; "off" for skipping bookmarks
+my $locations = "on";      # "on" for including locations; "off" for skipping locations
+
+# CONFIGURATION SECTION ENDS HERE
+
+my $integrate = "0";
+my $disintegrate = "0";
+my $restore = "0";
+
+my $myclippings = $0;
+$myclippings =~ s/.*\///;
+
+sub usage
+{
+	print <<USAGE;
+$myclippings:
+   parses Kindle\'s "My Clippings.txt" and stores data in external file(s)
+   or restores "My Clippings.txt" on the basis of generated files(s)
+
+format:
+   $myclippings [options]
+
+options:
+   -k [4 | 3]           - Kindle version       ($kindle)
+   -s [Linux | Windows] - system type          ($system)
+   -c [off | on]        - combine books/titles ($combine)
+   -t [off | on]        - store titles         ($titles)
+   -b [on | off]        - store bookmarks      ($bookmarks)
+   -l [on | off]        - store locations      ($locations)
+   -i                   - integrate "myclippings.txt"
+   -d                   - disintegrate "myclippings.txt"
+   -r                   - restore "My Clippings.txt"
+   -h                   - help
+
+bugs:
+   <c.kruk at bigfoot.com>
+
+USAGE
+	exit(0);
+}
+
+my @in;
+my $exit = "0";
+
+# get options
+
+{
+	my $i;
+	sub nextarg
+	{
+		my $arg = $ARGV[++$i];
+		die "Option `-$1' requires an argument\n" unless defined $arg;
+		$arg;
+	}
+	for ($i = 0; $i < @ARGV; $i++) {
+		if ($ARGV[$i] =~ /^-(.*)$/) {
+			if ( $1 eq 'h') {
+				usage();
+			} elsif ($1 eq 'k') {
+				$kindle = nextarg;
+				if ($kindle !~ /4|3/) {
+					print "Invalid argument \$kindle = $kindle\n";
+					$exit = "1";
+				}
+			} elsif ($1 eq 's') {
+				$system = nextarg;
+				if ($system !~ /Linux|Windows/i) {
+					print "Invalid argument \$system = $system\n";
+					$exit = "1";
+				}
+			} elsif ($1 eq 'c') {
+				$combine = nextarg;
+				if ($combine !~ /off|on/) {
+					print "Invalid argument \$combine = $combine\n";
+					$exit = "1";
+				}
+			} elsif ($1 eq 't') {
+				$titles = nextarg;
+				if ($titles !~ /off|on/) {
+					print "Invalid argument \$titles = $titles\n";
+					$exit = "1";
+				}
+			} elsif ($1 eq 'b') {
+				$bookmarks = nextarg;
+				if ($bookmarks !~ /off|on/) {
+					print "Invalid argument \$bookmarks = $bookmarks\n";
+					$exit = "1";
+				}
+			} elsif ($1 eq 'l') {
+				$locations = nextarg;
+				if ($locations !~ /off|on/) {
+					print "Invalid argument \$locations = $locations\n";
+					$exit = "1";
+				}
+			} elsif ($1 eq 'i') {
+				$integrate = "1";
+			} elsif ($1 eq 'd') {
+				$disintegrate = "1";
+			} elsif ($1 eq 'r') {
+				$restore = "1";
+			} else {
+				die "Unknown option `-$1'\n";
+			}
+		} else {
+			push @in, $ARGV[$i];
+		}
+	}
+	if ($exit eq "1") {
+		exit(1);
+	}
+}
+
+my $path = "";
+
+if ($system =~ /Windows/i) {
+	$path = "$ENV{USERPROFILE}\\My Documents\\";    # English version of the system
+	# $path = "$ENV{USERPROFILE}\\Moje dokumenty\\";  # Polish version of the system
+}
+
+my $MY_CLIPPINGS_FILE = ""; # input in parsing mode; output in restoring mode
+my $OUTPUT_FILE       = ""; # output in parsing mode
+my $INPUT_FILE        = ""; # input in restoring mode
+
+$MY_CLIPPINGS_FILE = "${path}My Clippings.txt";
+
+# disintegrating "myclippings.txt"
+
+if ($disintegrate eq "1") {
+	open (INPUT, "<:encoding(utf8)", "myclippings.txt")
+		or die "Unable to read file myclippings.txt\n";
+	
+	my $title = "";
+	my $defined_titles = "0";
+	my $book_number = "1";
+	my $opened_file = "0";
+	while(<INPUT>) {
+		my $line = $_;
+		chomp $line;
+		if ($line eq "") {
+			$book_number = $book_number + 1;
+			close(OUTPUT);
+			if ($title =~ /^BOOK NO. /) {
+				$opened_file = "0";
+			}
+		}
+		if ($line =~ /^# /) {
+			$title = $line;
+			$title =~ s/^# //;
+			$title = $title . ".txt";
+			$defined_titles = "1";
+			$opened_file = "0";
+		}
+		if ($defined_titles eq "0" && $opened_file eq "0") {
+			$title = "BOOK NO. $book_number.txt";
+		}
+		if ($opened_file eq "0") {
+			$title = decode_utf8($title);
+			binmode STDOUT, ":utf8";
+			print "$title\n";
+			open OUTPUT, ">:utf8", $title
+				or die "Unable to write file $title\n";
+			$opened_file = "1";
+		}
+		# print "$book_number\n";
+		# print "$line\n";
+		if ($line ne "") {
+			print OUTPUT "$line\n";
+		}
+	}
+	unlink ("BOOK NO. $book_number.txt");
+	exit(0);
+}
+
+# integrating "myclippings.txt" or restoring "My Clippings.txt"
+
+my $multiple_files;
+if ($restore eq "1" || $integrate eq "1") {
+	$multiple_files = "1";
+	open (TEST, "myclippings.txt") and $multiple_files = "0";
+	close (TEST);
+	if ($integrate eq "1") {
+		$multiple_files = "1";
+	}
+	
+	# interating "myclippings.txt"
+	
+	my $txt_file;
+	my $line = "";
+	if ($multiple_files eq "1") {
+		# NOTE: the file is in UTF-8 format -- the first 3 bytes are
+		# a byte order mark: EF BB BF = 0xFEFF when decoded via UTF-8
+		open OUTPUT, ">:utf8", "myclippings.txt"
+			or die "Unable to write file myclippings.txt\n";
+		print "myclippings.txt\n";
+		if ($integrate eq "0") {
+			unlink ("My Clippings.txt");
+		}
+		while (defined($txt_file = <*.txt>)) {
+			next if $txt_file eq "myclippings.txt";
+			next if $txt_file eq "My Clippings.txt" && $integrate eq "1";
+			my $my_title = "0"; # a tricky variable to omit doubled titles
+			$txt_file = decode_utf8($txt_file);
+			binmode STDOUT, ":utf8";
+			# print "$txt_file\n";
+			open INPUT, "<:encoding(utf8)", "$txt_file";
+			my $title = $txt_file;
+			$title =~ s/\.txt//;
+			while (<INPUT>) {
+				$line = $_;
+				chomp $line;
+				my $titlelength = length($title) + 2;
+				if ($system =~ /Windows/i) {
+					$titlelength = $titlelength + 1;
+				}
+				if ($my_title eq "0") {
+					# print "$title" . ('-' x $titlelength) . "\n";
+					print OUTPUT "# $title\n";
+					print OUTPUT ('-' x $titlelength) . "\n";
+				}
+				$my_title = "1";
+				if ($line !~ /^# / && $line !~ /^-----/) {
+					print OUTPUT "$line\n";
+				}
+			}
+			print OUTPUT "\n";
+		}
+		close (INPUT);
+		close (OUTPUT);
+		$multiple_files = "0";
+	}
+	
+	if ($integrate eq "1") {
+		exit(0);
+	}
+	
+	# restoring "My Clippings.txt"
+	
+	if (-z "myclippings.txt") {
+		print "The myclippings.txt file is zero size\n";
+		exit(1);
+	}
+	
+	# NOTE: the file is in UTF-8 format -- the first 3 bytes are
+	# a byte order mark: EF BB BF = 0xFEFF when decoded via UTF-8
+	open OUTPUT, ">:utf8", $MY_CLIPPINGS_FILE
+		or die "Unable to write file $MY_CLIPPINGS_FILE\n";
+	
+	if ($multiple_files eq "0") {
+	    open INPUT, "<:encoding(utf8)", "myclippings.txt";
+	}
+	
+	print "$MY_CLIPPINGS_FILE\n";
+	
+	my $title = "";
+	my $book_number = "1";
+	my $bom = "0"; # a tricky variable to insert initial BOM
+	my $my_clippings = "0"; # a tricky variable to omit initial ==========
+	my $new_title = "0"; # a tricky variable to omit doubled titles
+	while(<INPUT>) {
+		my $line = $_;
+		chomp $line;
+		my $pronoun = "";
+		if ($kindle =~ /4/) {
+			$pronoun = "Your ";
+		}
+		if ($line =~ /^# /) {
+			$title = $line;
+			$title =~ s/^# //;
+			$new_title = "1";
+		}
+		if ($title eq "" || $line eq "") {
+			$title = "BOOK NO. $book_number";
+			$book_number = $book_number + 1;
+			$new_title = "1";
+		}
+		my $clip = "";
+		my $text = "";
+		my $location = "";
+		if ($line =~ /^((\d+(-\d+)?)\t)?([-\*!]) (.*)$/) {
+			# print "1. $1\n2. $2\n3. $3\n4. $4\n5. $5\n";
+			$location = $2;
+			if (!defined($location) || $location eq "") {
+				$location = "0";
+			}
+			$clip = $4;
+			$text = $5;
+			if ($clip eq "-") {
+				$clip = "Highlight";
+			} elsif ($clip eq "*") {
+				$clip = "Note";
+			} elsif ($clip eq "!") {
+				$clip = "Bookmark";
+			}
+			my $ident = "";
+			if ($kindle eq "4") {
+				$ident = "Location";
+			} elsif ($kindle eq "3") {
+				$ident = "Loc.";
+			}
+			if ($bom eq "0") {
+				print OUTPUT "\x{FEFF}"; # insert BOM
+				$bom = "1";
+			}
+			if ($my_clippings ne "0") {
+				if ($system =~ /Linux/i) {
+					print OUTPUT "==========\r\n";
+				} elsif ($system =~ /Windows/i) {
+					print OUTPUT "==========\n";
+				}
+				$my_clippings = "1";
+			}
+			$my_clippings = "1";
+			if ($new_title eq "1") {
+				binmode STDOUT, ":utf8";
+				# print "$title\n";
+				$new_title = "0";
+			}
+			if ($system =~ /Linux/i) {
+				print OUTPUT "$title\r\n";
+				print OUTPUT "- $pronoun$clip $ident $location\r\n";
+				print OUTPUT "\r\n";
+				print OUTPUT "$text\r\n";
+			} elsif ($system =~ /Windows/i) {
+				print OUTPUT "$title\n";
+				print OUTPUT "- $pronoun$clip $ident $location\n";
+				print OUTPUT "\n";
+				print OUTPUT "$text\n";
+			}
+		}
+	}
+	print OUTPUT "==========\n";
+	
+	exit(0);
+}
+
+# parsing "My Clippings.txt"
+
+# NOTE: the file is in UTF-8 format -- the first 3 bytes are
+# a byte order mark: EF BB BF = 0xFEFF when decoded via UTF-8
+open my $clips_fh, "<:encoding(utf8)", $MY_CLIPPINGS_FILE
+	or die "Unable to read file $MY_CLIPPINGS_FILE\n";
+
+my $new_location = "0"; # a tricky variable to omit doubled bookmarks
+
+my %clips;
+while(<$clips_fh>) {
+	my $title = $_;
+	$title =~ s/^\x{FEFF}//; # remove BOM
+	if ($system =~ /Linux/i) {
+		$title =~ s/\r//;
+	}
+	my $line = <$clips_fh>;
+	if ($new_location eq "0") {
+		$new_location = "1";
+	}
+	my ($type, $location);
+	if ($kindle eq "3") {
+		if($line =~ /^-\s+(\w+)\s+Loc.\s+(\d+(-\d+)?)/) {
+			($type, $location) = ($1, $2);
+			# print "type=$type location=$location ";
+		} else {
+			die "Can't find clip type: " . $line;
+		}
+	} elsif ($kindle eq "4") {
+		if($line =~ /^-\s+Your\s+(\w+)\s+Location\s+(\d+(-\d+)?)/) {
+			($type, $location) = ($1, $2);
+			# print "type=$type location=$location ";
+		} else {
+			die "Can't find clip type: " . $line;
+		}
+	}
+	while(1) {
+		$line = <$clips_fh>;
+		if ($system =~ /Linux/i) {
+			$line =~ s/\r//;
+		}
+		if($type =~ /bookmark/i && $bookmarks eq "on") {
+			if($line eq "\n") {
+				$line = "!\n";
+			}
+		}
+		next if $line =~ /^\s*$/;  # skip blank lines
+		last if $line =~ /^=======/;
+		my $printed_location = "$location\t";
+		if ($locations eq "off") {
+			$printed_location = "";
+		}
+		if($type =~ /note/i) {
+			$clips{$title}{$location} .= "$printed_location* " .$line;
+		} elsif ($type =~ /highlight/i) {
+			$clips{$title}{$location} .= "$printed_location- " .$line;
+		} elsif ($type =~ /bookmark/i) {
+			if ($new_location eq "1") {
+				$clips{$title}{$location} .= "$printed_location! \n";
+				$new_location = "0";
+			}
+		}
+	}
+}
+
+if ($combine eq "on") {
+	my $OUTPUT_FILE = "myclippings.txt";
+	open OUTPUT, ">:utf8", $OUTPUT_FILE  # auto UTF-8 encoding on write
+	or die "Unable to create file $OUTPUT_FILE\n";
+}
+
+my $printed_message = "0";
+foreach my $title (sort keys %clips) {
+	my $output_file = $title;
+	chomp $output_file;
+	if ($system =~ /Windows/i) {
+		chop($output_file);
+	}
+	if ($combine eq "off") {
+		open (OUTPUT, ">:utf8", "$output_file.txt")  # auto UTF-8 encoding on write
+		or die "Unable to create file $output_file.txt\n";
+	}
+	binmode STDOUT, ":encoding(utf8)";
+	if ($combine eq "off") {
+		print "$output_file.txt\n";
+	} elsif ($combine eq "on" && $printed_message eq "0") {
+		print "myclippings.txt\n";
+		$printed_message = "1";
+	}
+	if ($titles eq "on") {
+		my $titlelength = length($title) + 1;
+		if ($system =~ /Windows/i) {
+			$titlelength = $titlelength + 1;
+		}
+		# print "$title" . ('-' x $titlelength) . "\n";
+		print OUTPUT "# $title" . ('-' x $titlelength) . "\n";
+	}
+	foreach my $location (sort { (split '-', $a, 2)[0] <=> (split '-', $b, 2)[0] } keys %{$clips{$title}}) {
+		# print $clips{$title}{$location};
+		print OUTPUT $clips{$title}{$location};
+	}
+	if ($combine eq "on") {
+		print OUTPUT "\n";
+	}
+}
+
+exit(0);
+
+# subroutines
+
+sub skip_entry {
+	while(1) {
+		my $line = <$clips_fh>;
+		last if $line =~ /^=======/;
+	}
+}
+
+sub sort_numerically {
+	if ($a < $b) {
+		return -1;
+	} elsif ($a == $b) {
+		return 0;
+	} elsif ($a > $b) {
+		return 1;
+	}
+}
+
